@@ -183,6 +183,23 @@ export default function AadhaarSimple() {
     }
   };
 
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        alert("Photo size must be less than 5MB");
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const photoUrl = event.target?.result as string;
+        setFormData({...formData, photoUrl});
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -343,6 +360,24 @@ export default function AadhaarSimple() {
                   onChange={(e) => setFormData({...formData, voterId: e.target.value})}
                   placeholder="Auto-generated if empty"
                 />
+              </div>
+
+              {/* Photo Upload */}
+              <div>
+                <Label>Upload Photo</Label>
+                <div className="mt-2">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoUpload}
+                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  />
+                  {formData.photoUrl && (
+                    <div className="mt-2">
+                      <img src={formData.photoUrl} alt="Citizen photo" className="w-32 h-32 object-cover rounded-md border" />
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Biometric Status */}

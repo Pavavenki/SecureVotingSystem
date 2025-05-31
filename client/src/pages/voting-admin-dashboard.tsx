@@ -38,6 +38,7 @@ export default function VotingAdminDashboard() {
     fullName: "",
     constituency: ""
   });
+  const [editingVoter, setEditingVoter] = useState<any>(null);
   const [newCandidate, setNewCandidate] = useState({
     name: "",
     party: "",
@@ -45,6 +46,7 @@ export default function VotingAdminDashboard() {
     qualification: "",
     experience: ""
   });
+  const [editingCandidate, setEditingCandidate] = useState<any>(null);
 
   const queryClient = useQueryClient();
   
@@ -102,6 +104,30 @@ export default function VotingAdminDashboard() {
     }
   });
 
+  const updateVoterMutation = useMutation({
+    mutationFn: async (voterData: any) => {
+      const response = await apiRequest("PUT", `/api/voters/${voterData.voterId}`, voterData);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/voters"] });
+      setEditingVoter(null);
+      setNewVoter({ voterId: "", aadhaarNumber: "", password: "", fullName: "", constituency: "" });
+    }
+  });
+
+  const updateCandidateMutation = useMutation({
+    mutationFn: async (candidateData: any) => {
+      const response = await apiRequest("PUT", `/api/candidates/${candidateData.id}`, candidateData);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/candidates"] });
+      setEditingCandidate(null);
+      setNewCandidate({ name: "", party: "", constituency: "", qualification: "", experience: "" });
+    }
+  });
+
   const deleteVoterMutation = useMutation({
     mutationFn: async (voterId: string) => {
       const response = await apiRequest("DELETE", `/api/voters/${voterId}`);
@@ -121,6 +147,42 @@ export default function VotingAdminDashboard() {
       queryClient.invalidateQueries({ queryKey: ["/api/candidates"] });
     }
   });
+
+  const handleEditVoter = (voter: any) => {
+    setEditingVoter(voter);
+    setNewVoter({
+      voterId: voter.voterId,
+      aadhaarNumber: voter.aadhaarNumber,
+      password: voter.password,
+      fullName: voter.fullName,
+      constituency: voter.constituency
+    });
+    setIsAddVoterDialogOpen(true);
+  };
+
+  const handleEditCandidate = (candidate: any) => {
+    setEditingCandidate(candidate);
+    setNewCandidate({
+      name: candidate.name,
+      party: candidate.party,
+      constituency: candidate.constituency,
+      qualification: candidate.qualification || "",
+      experience: candidate.experience || ""
+    });
+    setIsAddCandidateDialogOpen(true);
+  };
+
+  const handleDeleteVoter = (voterId: string) => {
+    if (confirm("Are you sure you want to delete this voter?")) {
+      deleteVoterMutation.mutate(voterId);
+    }
+  };
+
+  const handleDeleteCandidate = (candidateId: string) => {
+    if (confirm("Are you sure you want to delete this candidate?")) {
+      deleteCandidateMutation.mutate(candidateId);
+    }
+  };
 
   const displayStats = stats || {
     totalVotes: 0,
@@ -399,9 +461,25 @@ export default function VotingAdminDashboard() {
                           </div>
                         </div>
                         <div className="flex justify-end space-x-2 mt-4">
-                          <Button variant="outline" onClick={() => setIsAddVoterDialogOpen(false)}>Cancel</Button>
-                          <Button onClick={() => addVoterMutation.mutate(newVoter)} disabled={addVoterMutation.isPending}>
-                            {addVoterMutation.isPending ? "Adding..." : "Add Voter"}
+                          <Button variant="outline" onClick={() => {
+                            setIsAddVoterDialogOpen(false);
+                            setEditingVoter(null);
+                            setNewVoter({ voterId: "", aadhaarNumber: "", password: "", fullName: "", constituency: "" });
+                          }}>Cancel</Button>
+                          <Button 
+                            onClick={() => {
+                              if (editingVoter) {
+                                updateVoterMutation.mutate({ ...newVoter, id: editingVoter.id });
+                              } else {
+                                addVoterMutation.mutate(newVoter);
+                              }
+                            }} 
+                            disabled={addVoterMutation.isPending || updateVoterMutation.isPending}
+                          >
+                            {editingVoter 
+                              ? (updateVoterMutation.isPending ? "Updating..." : "Update Voter")
+                              : (addVoterMutation.isPending ? "Adding..." : "Add Voter")
+                            }
                           </Button>
                         </div>
                       </DialogContent>
@@ -467,7 +545,12 @@ export default function VotingAdminDashboard() {
                                 <Button variant="ghost" size="sm" className="text-blue-600">
                                   <Eye className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="sm" className="text-orange-600">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="text-orange-600"
+                                  onClick={() => handleEditVoter(voter)}
+                                >
                                   <Edit className="h-4 w-4" />
                                 </Button>
                                 <Button 
