@@ -106,24 +106,25 @@ export default function VotingLogin() {
             <div className="space-y-2">
               <Label className="text-sm font-medium text-gray-700 flex items-center">
                 <Globe className="h-4 w-4 mr-2" />
-                Select Language / भाषा चुनें
+                {t('language')}
               </Label>
-              <select
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                value={language}
-                onChange={(e) => setLanguage(e.target.value)}
-              >
-                {languages.map((lang) => (
-                  <option key={lang.code} value={lang.code}>
-                    {lang.name}
-                  </option>
-                ))}
-              </select>
+              <Select value={language} onValueChange={setLanguage}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {languages.map((lang) => (
+                    <SelectItem key={lang.code} value={lang.code}>
+                      {lang.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Role Selection */}
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-gray-700">Login As</Label>
+              <Label className="text-sm font-medium text-gray-700">{t('login')}</Label>
               <div className="grid grid-cols-2 gap-4">
                 <Button
                   type="button"
@@ -136,7 +137,7 @@ export default function VotingLogin() {
                   onClick={() => setSelectedRole("voter")}
                 >
                   <User className="h-6 w-6" />
-                  <span className="text-sm font-medium">Voter</span>
+                  <span className="text-sm font-medium">{t('login_as_voter')}</span>
                 </Button>
                 <Button
                   type="button"
@@ -149,7 +150,7 @@ export default function VotingLogin() {
                   onClick={() => setSelectedRole("admin")}
                 >
                   <UserCog className="h-6 w-6" />
-                  <span className="text-sm font-medium">Admin</span>
+                  <span className="text-sm font-medium">{t('login_as_admin')}</span>
                 </Button>
               </div>
             </div>

@@ -33,41 +33,52 @@ export default function CameraCapture({ onCapture, isActive, status }: CameraCap
     try {
       setCameraError(null);
       
-      // Request camera permission
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          width: { ideal: 640 },
-          height: { ideal: 480 },
-          facingMode: 'user'
-        }
-      });
+      // Check if camera is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setCameraError("Camera not supported on this device.");
+        return;
+      }
 
+      // Request camera permission with fallback options
+      const constraints = {
+        video: {
+          width: { ideal: 640, min: 320 },
+          height: { ideal: 480, min: 240 },
+          facingMode: 'user'
+        },
+        audio: false
+      };
+
+      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
       setStream(mediaStream);
+      
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
-        
-        // Wait for video to load before playing
         videoRef.current.onloadedmetadata = () => {
-          videoRef.current?.play().then(() => {
-            // Simple face detection simulation
-            setTimeout(() => {
-              setFaceDetected(true);
-            }, 2000);
-          }).catch((playError) => {
-            console.error("Video play error:", playError);
-            setCameraError("Unable to start video stream.");
-          });
+          if (videoRef.current) {
+            videoRef.current.play().then(() => {
+              // Simulate face detection after camera starts
+              setTimeout(() => {
+                setFaceDetected(true);
+              }, 1500);
+            }).catch((playError) => {
+              console.error("Video play error:", playError);
+              setCameraError("Unable to start video stream.");
+            });
+          }
         };
       }
-    } catch (error) {
-      console.error("Camera access error:", error);
+    } catch (error: any) {
+      console.error("Camera permission denied:", error);
       
-      if (error.name === "NotAllowedError") {
-        setCameraError("Camera access denied. Please allow camera permissions and refresh the page.");
-      } else if (error.name === "NotFoundError") {
-        setCameraError("No camera found. Please ensure a camera is connected.");
+      if (error.name === "NotAllowedError" || error.name === "PermissionDeniedError") {
+        setCameraError("Camera access denied. Please click the camera icon in your browser's address bar and allow camera access, then refresh the page.");
+      } else if (error.name === "NotFoundError" || error.name === "DevicesNotFoundError") {
+        setCameraError("No camera found. Please ensure a camera is connected to your device.");
+      } else if (error.name === "NotReadableError") {
+        setCameraError("Camera is being used by another application. Please close other apps using the camera.");
       } else {
-        setCameraError("Unable to access camera. Please check camera permissions.");
+        setCameraError("Unable to access camera. Please check your camera settings and try again.");
       }
     }
   };
