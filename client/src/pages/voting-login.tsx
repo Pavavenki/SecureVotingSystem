@@ -45,7 +45,7 @@ export default function VotingLogin() {
       if (selectedRole === "admin") {
         setLocation("/voting/admin");
       } else {
-        setLocation("/voting/verification");
+        setLocation("/voter/profile");
       }
     },
     onError: (error: Error) => {
