@@ -88,7 +88,7 @@ export class DatabaseStorage implements IStorage {
       updatedAt: new Date()
     }).returning();
     
-    // Auto-create voter record with date of birth as authentication
+    // Auto-create voter record with date of birth as password
     if (newCitizen.aadhaarNumber && newCitizen.dateOfBirth) {
       const voterId = citizen.voterId || `VOTER${Date.now().toString().slice(-6)}`;
       try {
@@ -96,18 +96,8 @@ export class DatabaseStorage implements IStorage {
           voterId: voterId,
           aadhaarNumber: newCitizen.aadhaarNumber,
           fullName: newCitizen.fullName,
-          dateOfBirth: newCitizen.dateOfBirth,
-          gender: newCitizen.gender,
-          phoneNumber: newCitizen.phoneNumber,
-          email: newCitizen.email,
-          address: newCitizen.address,
-          district: newCitizen.district,
-          state: newCitizen.state,
-          pincode: newCitizen.pincode,
-          constituency: newCitizen.constituency,
+          constituency: newCitizen.constituency || "Chennai North",
           password: newCitizen.dateOfBirth, // Use DOB as password
-          isEligible: true,
-          hasVoted: false
         });
       } catch (error) {
         console.log("Voter record may already exist for this citizen");
