@@ -29,6 +29,7 @@ import {
 
 export default function VotingAdminDashboard() {
   const [selectedConstituency, setSelectedConstituency] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [isAddVoterDialogOpen, setIsAddVoterDialogOpen] = useState(false);
   const [isAddCandidateDialogOpen, setIsAddCandidateDialogOpen] = useState(false);
   const [newVoter, setNewVoter] = useState({
@@ -44,7 +45,8 @@ export default function VotingAdminDashboard() {
     party: "",
     constituency: "",
     qualification: "",
-    experience: ""
+    experience: "",
+    photoUrl: ""
   });
   const [editingCandidate, setEditingCandidate] = useState<any>(null);
 
@@ -100,7 +102,7 @@ export default function VotingAdminDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/candidates"] });
       setIsAddCandidateDialogOpen(false);
-      setNewCandidate({ name: "", party: "", constituency: "", qualification: "", experience: "" });
+      setNewCandidate({ name: "", party: "", constituency: "", qualification: "", experience: "", photoUrl: "" });
     }
   });
 
@@ -398,7 +400,12 @@ export default function VotingAdminDashboard() {
                   <div className="flex space-x-4">
                     <div className="relative">
                       <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                      <Input placeholder="Search voters..." className="pl-10 w-80" />
+                      <Input 
+                        placeholder="Search voters..." 
+                        className="pl-10 w-80"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                      />
                     </div>
                     <Dialog open={isAddVoterDialogOpen} onOpenChange={setIsAddVoterDialogOpen}>
                       <DialogTrigger asChild>
@@ -512,63 +519,70 @@ export default function VotingAdminDashboard() {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {voters.length === 0 ? (
+                      {Array.isArray(voters) && voters.length === 0 ? (
                         <tr>
                           <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
                             No voters found
                           </td>
                         </tr>
                       ) : (
-                        voters.map((voter: any) => (
-                          <tr key={voter.id} className="hover:bg-gray-50">
-                            <td className="px-6 py-4 text-sm font-mono text-gray-900">
-                              {voter.voterId}
-                            </td>
-                            <td className="px-6 py-4 text-sm text-gray-900">
-                              {voter.fullName}
-                            </td>
-                            <td className="px-6 py-4 text-sm text-gray-900">
-                              {voter.constituency}
-                            </td>
-                            <td className="px-6 py-4">
-                              <Badge variant={voter.isActive ? "default" : "secondary"}>
-                                {voter.isActive ? "Active" : "Inactive"}
-                              </Badge>
-                            </td>
-                            <td className="px-6 py-4">
-                              <Badge variant={voter.hasVoted ? "default" : "secondary"}>
-                                {voter.hasVoted ? "Yes" : "No"}
-                              </Badge>
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="flex space-x-2">
-                                <Button variant="ghost" size="sm" className="text-blue-600">
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="text-orange-600"
-                                  onClick={() => handleEditVoter(voter)}
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="text-red-600"
-                                  onClick={() => {
-                                    if (confirm("Are you sure you want to delete this voter?")) {
-                                      deleteVoterMutation.mutate(voter.voterId);
-                                    }
-                                  }}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))
+                        Array.isArray(voters) && voters
+                          .filter((voter: any) => {
+                            if (!searchQuery) return true;
+                            return voter.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                   voter.voterId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                   voter.constituency?.toLowerCase().includes(searchQuery.toLowerCase());
+                          })
+                          .map((voter: any) => (
+                            <tr key={voter.id} className="hover:bg-gray-50">
+                              <td className="px-6 py-4 text-sm font-mono text-gray-900">
+                                {voter.voterId}
+                              </td>
+                              <td className="px-6 py-4 text-sm text-gray-900">
+                                {voter.fullName}
+                              </td>
+                              <td className="px-6 py-4 text-sm text-gray-900">
+                                {voter.constituency}
+                              </td>
+                              <td className="px-6 py-4">
+                                <Badge variant={voter.isActive ? "default" : "secondary"}>
+                                  {voter.isActive ? "Active" : "Inactive"}
+                                </Badge>
+                              </td>
+                              <td className="px-6 py-4">
+                                <Badge variant={voter.hasVoted ? "default" : "secondary"}>
+                                  {voter.hasVoted ? "Yes" : "No"}
+                                </Badge>
+                              </td>
+                              <td className="px-6 py-4">
+                                <div className="flex space-x-2">
+                                  <Button variant="ghost" size="sm" className="text-blue-600">
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="text-orange-600"
+                                    onClick={() => handleEditVoter(voter)}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="text-red-600"
+                                    onClick={() => {
+                                      if (confirm("Are you sure you want to delete this voter?")) {
+                                        deleteVoterMutation.mutate(voter.voterId);
+                                      }
+                                    }}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
                       )}
                     </tbody>
                   </table>
@@ -636,6 +650,26 @@ export default function VotingAdminDashboard() {
                             onChange={(e) => setNewCandidate({...newCandidate, experience: e.target.value})}
                             placeholder="Enter experience"
                           />
+                        </div>
+                        <div>
+                          <Label>Party Logo URL</Label>
+                          <Input
+                            value={newCandidate.photoUrl}
+                            onChange={(e) => setNewCandidate({...newCandidate, photoUrl: e.target.value})}
+                            placeholder="Enter Google image URL for party logo"
+                          />
+                          {newCandidate.photoUrl && (
+                            <div className="mt-2">
+                              <img 
+                                src={newCandidate.photoUrl} 
+                                alt="Party logo preview" 
+                                className="w-16 h-16 object-contain rounded border"
+                                onError={(e) => {
+                                  e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z'%3E%3C/path%3E%3Cpolyline points='3.27,6.96 12,12.01 20.73,6.96'%3E%3C/polyline%3E%3Cline x1='12' y1='22.08' x2='12' y2='12'%3E%3C/line%3E%3C/svg%3E";
+                                }}
+                              />
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div className="flex justify-end space-x-2 mt-4">
