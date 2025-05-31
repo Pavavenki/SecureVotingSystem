@@ -48,12 +48,15 @@ export default function PhotoCapture({ onPhotoCapture, initialPhoto }: PhotoCapt
       const canvas = canvasRef.current;
       const context = canvas.getContext('2d');
 
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      // Set reasonable dimensions to reduce file size
+      const maxWidth = 640;
+      const maxHeight = 480;
+      canvas.width = maxWidth;
+      canvas.height = maxHeight;
       
       if (context) {
-        context.drawImage(video, 0, 0);
-        const photoData = canvas.toDataURL('image/jpeg', 0.8);
+        context.drawImage(video, 0, 0, maxWidth, maxHeight);
+        const photoData = canvas.toDataURL('image/jpeg', 0.6);
         setCapturedPhoto(photoData);
         onPhotoCapture(photoData);
         stopCamera();
