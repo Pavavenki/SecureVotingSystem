@@ -27,6 +27,8 @@ export default function AadhaarSimple() {
     biometricStatus: "verified"
   });
 
+  const [editingCitizen, setEditingCitizen] = useState<any>(null);
+
   const queryClient = useQueryClient();
 
   // Fetch citizens
@@ -53,6 +55,51 @@ export default function AadhaarSimple() {
       queryClient.invalidateQueries({ queryKey: ["/api/citizens"] });
       resetForm();
       alert("Citizen added successfully!");
+    },
+    onError: (error: Error) => {
+      alert(`Error: ${error.message}`);
+    },
+  });
+
+  // Update citizen mutation
+  const updateCitizenMutation = useMutation({
+    mutationFn: async (citizenData: any) => {
+      const response = await fetch(`/api/citizens/${citizenData.aadhaarNumber}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(citizenData),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update citizen");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/citizens"] });
+      setEditingCitizen(null);
+      resetForm();
+      alert("Citizen updated successfully!");
+    },
+    onError: (error: Error) => {
+      alert(`Error: ${error.message}`);
+    },
+  });
+
+  // Delete citizen mutation
+  const deleteCitizenMutation = useMutation({
+    mutationFn: async (aadhaarNumber: string) => {
+      const response = await fetch(`/api/citizens/${aadhaarNumber}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to delete citizen");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/citizens"] });
+      alert("Citizen deleted successfully!");
     },
     onError: (error: Error) => {
       alert(`Error: ${error.message}`);
@@ -97,7 +144,43 @@ export default function AadhaarSimple() {
       fingerprintTemplates: `fp_${Date.now()}_verified`
     };
     
-    addCitizenMutation.mutate(submitData);
+    if (editingCitizen) {
+      updateCitizenMutation.mutate(submitData);
+    } else {
+      addCitizenMutation.mutate(submitData);
+    }
+  };
+
+  const startEdit = (citizen: any) => {
+    setEditingCitizen(citizen);
+    setFormData({
+      aadhaarNumber: citizen.aadhaarNumber,
+      fullName: citizen.fullName,
+      dateOfBirth: citizen.dateOfBirth,
+      gender: citizen.gender,
+      phoneNumber: citizen.phoneNumber || "",
+      email: citizen.email || "",
+      address: citizen.address || "",
+      district: citizen.district || "Chennai",
+      state: citizen.state || "Tamil Nadu",
+      pincode: citizen.pincode || "",
+      constituency: citizen.constituency || "Chennai North",
+      voterId: citizen.voterId || "",
+      photoUrl: citizen.photoUrl || "",
+      fingerprintTemplates: citizen.fingerprintTemplates || "",
+      biometricStatus: citizen.biometricStatus || "verified"
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingCitizen(null);
+    resetForm();
+  };
+
+  const handleDelete = (aadhaarNumber: string) => {
+    if (confirm("Are you sure you want to delete this citizen record?")) {
+      deleteCitizenMutation.mutate(aadhaarNumber);
+    }
   };
 
   return (
@@ -271,10 +354,25 @@ export default function AadhaarSimple() {
                 <p className="text-sm text-green-600 mt-1">Biometric verification completed successfully</p>
               </div>
 
-              <div className="flex justify-end">
-                <Button type="submit" disabled={addCitizenMutation.isPending}>
-                  {addCitizenMutation.isPending ? "Adding..." : "Add Citizen"}
+              <div className="flex justify-end gap-2">
+                <Button 
+                  type="submit" 
+                  disabled={addCitizenMutation.isPending || updateCitizenMutation.isPending}
+                >
+                  {editingCitizen 
+                    ? (updateCitizenMutation.isPending ? "Updating..." : "Update Citizen")
+                    : (addCitizenMutation.isPending ? "Adding..." : "Add Citizen")
+                  }
                 </Button>
+                {editingCitizen && (
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    onClick={cancelEdit}
+                  >
+                    Cancel Edit
+                  </Button>
+                )}
               </div>
             </form>
           </CardContent>
@@ -336,13 +434,24 @@ export default function AadhaarSimple() {
                         </td>
                         <td className="px-4 py-4">
                           <div className="flex space-x-2">
-                            <Button variant="ghost" size="sm">
+                            <Button variant="ghost" size="sm" title="View Details">
                               <Eye className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="sm">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => startEdit(citizen)}
+                              title="Edit Citizen"
+                            >
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="sm" className="text-red-600">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-red-600 hover:text-red-800"
+                              onClick={() => handleDelete(citizen.aadhaarNumber)}
+                              title="Delete Citizen"
+                            >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
