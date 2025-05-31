@@ -193,10 +193,11 @@ export default function AadhaarDashboard() {
   };
 
   const filteredCitizens = citizens.filter((citizen: any) => {
+    if (!citizen) return false;
     const matchesSearch = !searchQuery || 
-      citizen.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      citizen.aadhaarNumber.includes(searchQuery) ||
-      citizen.voterId?.includes(searchQuery);
+      (citizen.fullName && citizen.fullName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (citizen.aadhaarNumber && citizen.aadhaarNumber.includes(searchQuery)) ||
+      (citizen.voterId && citizen.voterId.includes(searchQuery));
     const matchesDistrict = !selectedDistrict || citizen.district === selectedDistrict;
     const matchesState = !selectedState || citizen.state === selectedState;
     return matchesSearch && matchesDistrict && matchesState;
@@ -358,8 +359,14 @@ export default function AadhaarDashboard() {
               <CardContent className="p-0">
                 {isLoading ? (
                   <div className="p-8 text-center">Loading citizens...</div>
+                ) : !citizens || citizens.length === 0 ? (
+                  <div className="p-8 text-center text-gray-500">
+                    No citizens registered yet. Click "Add Citizen" to get started.
+                  </div>
                 ) : filteredCitizens.length === 0 ? (
-                  <div className="p-8 text-center text-gray-500">No citizens found</div>
+                  <div className="p-8 text-center text-gray-500">
+                    No citizens match your search criteria. Total citizens: {citizens.length}
+                  </div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full">
@@ -618,7 +625,7 @@ export default function AadhaarDashboard() {
                       <SelectValue placeholder="Select District" />
                     </SelectTrigger>
                     <SelectContent>
-                      {newCitizen.state && DISTRICTS[newCitizen.state as keyof typeof DISTRICTS]?.map((district) => (
+                      {newCitizen.state && DISTRICTS[newCitizen.state as keyof typeof DISTRICTS]?.filter(district => district && district.trim() !== '').map((district) => (
                         <SelectItem key={district} value={district}>{district}</SelectItem>
                       ))}
                     </SelectContent>
@@ -643,7 +650,7 @@ export default function AadhaarDashboard() {
                       <SelectValue placeholder="Select Constituency" />
                     </SelectTrigger>
                     <SelectContent>
-                      {newCitizen.district && CONSTITUENCIES[newCitizen.district as keyof typeof CONSTITUENCIES]?.map((constituency) => (
+                      {newCitizen.district && CONSTITUENCIES[newCitizen.district as keyof typeof CONSTITUENCIES]?.filter(constituency => constituency && constituency.trim() !== '').map((constituency) => (
                         <SelectItem key={constituency} value={constituency}>{constituency}</SelectItem>
                       ))}
                     </SelectContent>
