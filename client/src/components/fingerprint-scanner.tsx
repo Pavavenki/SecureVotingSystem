@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Fingerprint, CheckCircle, X, AlertTriangle } from "lucide-react";
@@ -13,7 +13,7 @@ export default function FingerprintScanner({ onScan, isActive, status }: Fingerp
   const [isScanning, setIsScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
 
-  const simulateFingerprintScan = useCallback(async () => {
+  const simulateFingerprintScan = async () => {
     if (!isActive || isScanning) return;
 
     setIsScanning(true);
@@ -26,16 +26,14 @@ export default function FingerprintScanner({ onScan, isActive, status }: Fingerp
           clearInterval(interval);
           // Generate mock fingerprint data
           const mockFingerprintData = `FP_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-          setTimeout(() => {
-            onScan(mockFingerprintData);
-            setIsScanning(false);
-          }, 100);
+          onScan(mockFingerprintData);
+          setIsScanning(false);
           return 100;
         }
         return prev + 10;
       });
     }, 200);
-  }, [isActive, isScanning, onScan]);
+  };
 
   const getScannerColor = () => {
     if (status === "verified") return "bg-green-500";
