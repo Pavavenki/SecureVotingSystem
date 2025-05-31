@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer } from "ws";
 import { storage } from "./storage";
@@ -11,10 +11,80 @@ import {
 } from "@shared/schema";
 import crypto from "crypto";
 
+// Extend Express Request type to include session
+declare module 'express-session' {
+  interface SessionData {
+    user?: {
+      userId: string;
+      role: string;
+      system: string;
+    };
+  }
+}
+
+interface AuthenticatedRequest extends Request {
+  session: any;
+}
+
+// Demo data creation function
+async function createDemoDataIfNeeded() {
+  try {
+    // Check if demo voter exists
+    const existingVoter = await storage.getVoter("VOTER001");
+    if (!existingVoter) {
+      // Create demo citizen first
+      await storage.createCitizen({
+        aadhaarNumber: "1234-5678-9012",
+        fullName: "Rajesh Kumar Singh",
+        dateOfBirth: new Date("1990-05-15"),
+        gender: "Male",
+        phoneNumber: "9876543210",
+        email: "rajesh.singh@email.com",
+        address: "123 Main Street, Mumbai",
+        district: "Mumbai",
+        state: "Maharashtra",
+        pincode: "400001",
+        fingerprintTemplate: "demo_fingerprint_template",
+        faceTemplate: "demo_face_template"
+      });
+
+      // Create demo voter
+      await storage.createVoter({
+        voterId: "VOTER001",
+        aadhaarNumber: "1234-5678-9012",
+        password: "voter123",
+        fullName: "Rajesh Kumar Singh",
+        constituency: "Mumbai North - 24"
+      });
+
+      // Create demo candidates
+      await storage.createCandidate({
+        name: "Candidate A",
+        party: "Party A",
+        constituency: "Mumbai North - 24",
+        qualification: "Graduate",
+        experience: "5 years in social work"
+      });
+
+      await storage.createCandidate({
+        name: "Candidate B", 
+        party: "Party B",
+        constituency: "Mumbai North - 24",
+        qualification: "Post Graduate",
+        experience: "10 years in public service"
+      });
+
+      console.log("Demo data created successfully");
+    }
+  } catch (error) {
+    console.error("Error creating demo data:", error);
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication middleware
-  const authenticate = (req: any, res: any, next: any) => {
-    // Simple session-based auth for demo
+  const authenticate = (req: AuthenticatedRequest, res: any, next: any) => {
+    // Simple session-based auth
     if (!req.session.user) {
       return res.status(401).json({ message: "Unauthorized" });
     }
@@ -22,11 +92,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   // Admin authentication endpoint
-  app.post("/api/admin/login", async (req, res) => {
+  app.post("/api/admin/login", async (req: AuthenticatedRequest, res) => {
     try {
       const { userId, password } = req.body;
       
-      // For demo, use hardcoded admin credentials
+      // Demo admin credentials
       if (userId === "admin" && password === "admin123") {
         req.session.user = { userId, role: "admin", system: "aadhaar" };
         res.json({ success: true, user: req.session.user });
@@ -34,12 +104,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(401).json({ message: "Invalid credentials" });
       }
     } catch (error) {
+      console.error("Admin login error:", error);
       res.status(500).json({ message: "Login failed" });
     }
   });
 
   // Voting authentication endpoint
-  app.post("/api/voting/login", async (req, res) => {
+  app.post("/api/voting/login", async (req: AuthenticatedRequest, res) => {
     try {
       const { userId, password, role } = req.body;
       
@@ -52,7 +123,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           res.status(401).json({ message: "Invalid admin credentials" });
         }
       } else {
-        // Voter login
+        // Voter login - create demo data if needed
+        await createDemoDataIfNeeded();
+        
         const voter = await storage.getVoter(userId);
         if (voter && voter.password === password) {
           req.session.user = { userId: voter.voterId, role: "voter", system: "voting" };
@@ -62,12 +135,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
     } catch (error) {
+      console.error("Voting login error:", error);
       res.status(500).json({ message: "Login failed" });
     }
   });
 
   // Logout endpoint
-  app.post("/api/logout", (req, res) => {
+  app.post("/api/logout", (req: AuthenticatedRequest, res) => {
     req.session.destroy((err) => {
       if (err) {
         res.status(500).json({ message: "Logout failed" });
@@ -78,7 +152,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get current user
-  app.get("/api/auth/user", (req: any, res) => {
+  app.get("/api/auth/user", (req: AuthenticatedRequest, res) => {
     if (req.session.user) {
       res.json(req.session.user);
     } else {
