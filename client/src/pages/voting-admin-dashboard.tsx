@@ -437,13 +437,14 @@ export default function VotingAdminDashboard() {
                             />
                           </div>
                           <div>
-                            <Label>Password</Label>
+                            <Label>Password (Date of Birth: YYYY-MM-DD)</Label>
                             <Input
-                              type="password"
+                              type="text"
                               value={newVoter.password}
                               onChange={(e) => setNewVoter({...newVoter, password: e.target.value})}
-                              placeholder="Enter password"
+                              placeholder="YYYY-MM-DD format"
                             />
+                            <p className="text-sm text-gray-500 mt-1">Used for voter authentication during login</p>
                           </div>
                           <div>
                             <Label>Full Name</Label>
@@ -509,6 +510,9 @@ export default function VotingAdminDashboard() {
                           Constituency
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">
+                          Password (DOB)
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">
                           Status
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">
@@ -522,7 +526,7 @@ export default function VotingAdminDashboard() {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {Array.isArray(voters) && voters.length === 0 ? (
                         <tr>
-                          <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                          <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
                             No voters found
                           </td>
                         </tr>
@@ -544,6 +548,9 @@ export default function VotingAdminDashboard() {
                               </td>
                               <td className="px-6 py-4 text-sm text-gray-900">
                                 {voter.constituency}
+                              </td>
+                              <td className="px-6 py-4 text-sm font-mono text-gray-700 bg-gray-50">
+                                {voter.password || 'Not set'}
                               </td>
                               <td className="px-6 py-4">
                                 <Badge variant={voter.isActive ? "default" : "secondary"}>
