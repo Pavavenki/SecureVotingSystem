@@ -84,7 +84,7 @@ export default function AadhaarDashboard() {
   const queryClient = useQueryClient();
 
   // Fetch citizens data
-  const { data: citizens = [], isLoading } = useQuery({
+  const { data: citizens = [], isLoading } = useQuery<any[]>({
     queryKey: ["/api/citizens"],
     retry: false,
   });
@@ -98,10 +98,13 @@ export default function AadhaarDashboard() {
   // Add citizen mutation
   const addCitizenMutation = useMutation({
     mutationFn: async (citizenData: any) => {
-      return apiRequest("/api/citizens", {
+      const response = await fetch("/api/citizens", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(citizenData),
       });
+      if (!response.ok) throw new Error("Failed to add citizen");
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/citizens"] });
@@ -114,10 +117,13 @@ export default function AadhaarDashboard() {
   // Edit citizen mutation
   const editCitizenMutation = useMutation({
     mutationFn: async ({ aadhaar, data }: { aadhaar: string; data: any }) => {
-      return apiRequest(`/api/citizens/${aadhaar}`, {
+      const response = await fetch(`/api/citizens/${aadhaar}`, {
         method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
+      if (!response.ok) throw new Error("Failed to update citizen");
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/citizens"] });
@@ -129,9 +135,11 @@ export default function AadhaarDashboard() {
   // Delete citizen mutation
   const deleteCitizenMutation = useMutation({
     mutationFn: async (aadhaar: string) => {
-      return apiRequest(`/api/citizens/${aadhaar}`, {
+      const response = await fetch(`/api/citizens/${aadhaar}`, {
         method: "DELETE",
       });
+      if (!response.ok) throw new Error("Failed to delete citizen");
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/citizens"] });

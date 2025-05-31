@@ -26,8 +26,10 @@ export default function FingerprintScanner({ onScan, isActive, status }: Fingerp
           clearInterval(interval);
           // Generate mock fingerprint data
           const mockFingerprintData = `FP_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-          onScan(mockFingerprintData);
-          setIsScanning(false);
+          setTimeout(() => {
+            onScan(mockFingerprintData);
+            setIsScanning(false);
+          }, 100);
           return 100;
         }
         return prev + 10;
