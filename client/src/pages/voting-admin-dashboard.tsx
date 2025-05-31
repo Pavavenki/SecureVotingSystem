@@ -126,7 +126,7 @@ export default function VotingAdminDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/candidates"] });
       setEditingCandidate(null);
-      setNewCandidate({ name: "", party: "", constituency: "", qualification: "", experience: "" });
+      setNewCandidate({ name: "", party: "", constituency: "", qualification: "", experience: "", photoUrl: "" });
     }
   });
 
@@ -169,7 +169,8 @@ export default function VotingAdminDashboard() {
       party: candidate.party,
       constituency: candidate.constituency,
       qualification: candidate.qualification || "",
-      experience: candidate.experience || ""
+      experience: candidate.experience || "",
+      photoUrl: candidate.photoUrl || ""
     });
     setIsAddCandidateDialogOpen(true);
   };

@@ -16,6 +16,7 @@ import BiometricVerification from "@/pages/biometric-verification";
 import VotingInterface from "@/pages/voting-interface";
 import VoteConfirmation from "@/pages/vote-confirmation";
 import VotingAdminDashboard from "@/pages/voting-admin-dashboard";
+import VoterProfile from "@/pages/voter-profile";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -32,6 +33,7 @@ function Router() {
       <Route path="/voting/vote" component={VotingInterface} />
       <Route path="/voting/confirmation" component={VoteConfirmation} />
       <Route path="/voting/admin" component={VotingAdminDashboard} />
+      <Route path="/voter/profile" component={VoterProfile} />
       <Route component={NotFound} />
     </Switch>
   );
