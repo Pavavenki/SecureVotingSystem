@@ -193,7 +193,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const citizen = await storage.createCitizen(validatedData);
       res.status(201).json(citizen);
     } catch (error) {
-      res.status(400).json({ message: "Invalid citizen data" });
+      console.error("Citizen creation error:", error);
+      res.status(400).json({ message: "Invalid citizen data", error: error.message });
     }
   });
 
