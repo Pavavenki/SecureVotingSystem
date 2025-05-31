@@ -32,6 +32,8 @@ export default function CameraCapture({ onCapture, isActive, status }: CameraCap
   const startCamera = async () => {
     try {
       setCameraError(null);
+      
+      // Request camera permission
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: {
           width: { ideal: 640 },
@@ -43,16 +45,30 @@ export default function CameraCapture({ onCapture, isActive, status }: CameraCap
       setStream(mediaStream);
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
-        videoRef.current.play();
         
-        // Simple face detection simulation
-        setTimeout(() => {
-          setFaceDetected(true);
-        }, 2000);
+        // Wait for video to load before playing
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current?.play().then(() => {
+            // Simple face detection simulation
+            setTimeout(() => {
+              setFaceDetected(true);
+            }, 2000);
+          }).catch((playError) => {
+            console.error("Video play error:", playError);
+            setCameraError("Unable to start video stream.");
+          });
+        };
       }
     } catch (error) {
       console.error("Camera access error:", error);
-      setCameraError("Unable to access camera. Please ensure camera permissions are granted.");
+      
+      if (error.name === "NotAllowedError") {
+        setCameraError("Camera access denied. Please allow camera permissions and refresh the page.");
+      } else if (error.name === "NotFoundError") {
+        setCameraError("No camera found. Please ensure a camera is connected.");
+      } else {
+        setCameraError("Unable to access camera. Please check camera permissions.");
+      }
     }
   };
 

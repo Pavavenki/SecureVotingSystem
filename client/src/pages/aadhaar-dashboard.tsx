@@ -1,11 +1,16 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { apiRequest } from "@/lib/queryClient";
 import { 
   Users, 
   Fingerprint, 
@@ -20,15 +25,103 @@ import {
   Trash2,
   LogOut
 } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import LanguageSelector from "@/components/language-selector";
 
 export default function AadhaarDashboard() {
+  const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDistrict, setSelectedDistrict] = useState("");
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingCitizen, setEditingCitizen] = useState(null);
+  const [newCitizen, setNewCitizen] = useState({
+    aadhaarNumber: "",
+    fullName: "",
+    dateOfBirth: "",
+    gender: "",
+    address: "",
+    district: "",
+    state: "",
+    pincode: ""
+  });
+
+  const queryClient = useQueryClient();
 
   // Fetch citizens data
   const { data: citizens = [], isLoading } = useQuery({
     queryKey: ["/api/citizens"],
   });
+
+  // Add citizen mutation
+  const addCitizenMutation = useMutation({
+    mutationFn: async (citizenData: any) => {
+      const response = await apiRequest("POST", "/api/citizens", citizenData);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/citizens"] });
+      setIsAddDialogOpen(false);
+      setNewCitizen({
+        aadhaarNumber: "",
+        fullName: "",
+        dateOfBirth: "",
+        gender: "",
+        address: "",
+        district: "",
+        state: "",
+        pincode: ""
+      });
+    }
+  });
+
+  // Update citizen mutation
+  const updateCitizenMutation = useMutation({
+    mutationFn: async ({ aadhaarNumber, updates }: { aadhaarNumber: string; updates: any }) => {
+      const response = await apiRequest("PUT", `/api/citizens/${aadhaarNumber}`, updates);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/citizens"] });
+      setIsEditDialogOpen(false);
+      setEditingCitizen(null);
+    }
+  });
+
+  // Delete citizen mutation
+  const deleteCitizenMutation = useMutation({
+    mutationFn: async (aadhaarNumber: string) => {
+      const response = await apiRequest("DELETE", `/api/citizens/${aadhaarNumber}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/citizens"] });
+    }
+  });
+
+  const handleAddCitizen = () => {
+    addCitizenMutation.mutate(newCitizen);
+  };
+
+  const handleEditCitizen = (citizen: any) => {
+    setEditingCitizen(citizen);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateCitizen = () => {
+    if (editingCitizen) {
+      updateCitizenMutation.mutate({
+        aadhaarNumber: editingCitizen.aadhaarNumber,
+        updates: editingCitizen
+      });
+    }
+  };
+
+  const handleDeleteCitizen = (aadhaarNumber: string) => {
+    if (confirm("Are you sure you want to delete this citizen?")) {
+      deleteCitizenMutation.mutate(aadhaarNumber);
+    }
+  };
 
   // Mock statistics (in real app, this would come from API)
   const stats = {
@@ -65,11 +158,12 @@ export default function AadhaarDashboard() {
               </div>
             </div>
             <div className="flex items-center space-x-4">
+              <LanguageSelector />
               <span className="text-sm text-gray-600">Admin User</span>
               <Link href="/">
                 <Button variant="outline" size="sm" className="text-red-600 border-red-600 hover:bg-red-50">
                   <LogOut className="h-4 w-4 mr-2" />
-                  Logout
+                  {t('logout')}
                 </Button>
               </Link>
             </div>
@@ -140,10 +234,96 @@ export default function AadhaarDashboard() {
 
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-4 mb-8">
-          <Button className="bg-blue-600 hover:bg-blue-700">
-            <UserPlus className="h-4 w-4 mr-2" />
-            Add Citizen
-          </Button>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-blue-600 hover:bg-blue-700">
+                <UserPlus className="h-4 w-4 mr-2" />
+                Add Citizen
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Add New Citizen</DialogTitle>
+              </DialogHeader>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Aadhaar Number</Label>
+                  <Input
+                    value={newCitizen.aadhaarNumber}
+                    onChange={(e) => setNewCitizen({...newCitizen, aadhaarNumber: e.target.value})}
+                    placeholder="1234-5678-9012"
+                  />
+                </div>
+                <div>
+                  <Label>Full Name</Label>
+                  <Input
+                    value={newCitizen.fullName}
+                    onChange={(e) => setNewCitizen({...newCitizen, fullName: e.target.value})}
+                    placeholder="Enter full name"
+                  />
+                </div>
+                <div>
+                  <Label>Date of Birth</Label>
+                  <Input
+                    type="date"
+                    value={newCitizen.dateOfBirth}
+                    onChange={(e) => setNewCitizen({...newCitizen, dateOfBirth: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label>Gender</Label>
+                  <Select value={newCitizen.gender} onValueChange={(value) => setNewCitizen({...newCitizen, gender: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Male">Male</SelectItem>
+                      <SelectItem value="Female">Female</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="col-span-2">
+                  <Label>Address</Label>
+                  <Textarea
+                    value={newCitizen.address}
+                    onChange={(e) => setNewCitizen({...newCitizen, address: e.target.value})}
+                    placeholder="Enter complete address"
+                  />
+                </div>
+                <div>
+                  <Label>District</Label>
+                  <Input
+                    value={newCitizen.district}
+                    onChange={(e) => setNewCitizen({...newCitizen, district: e.target.value})}
+                    placeholder="Enter district"
+                  />
+                </div>
+                <div>
+                  <Label>State</Label>
+                  <Input
+                    value={newCitizen.state}
+                    onChange={(e) => setNewCitizen({...newCitizen, state: e.target.value})}
+                    placeholder="Enter state"
+                  />
+                </div>
+                <div>
+                  <Label>Pincode</Label>
+                  <Input
+                    value={newCitizen.pincode}
+                    onChange={(e) => setNewCitizen({...newCitizen, pincode: e.target.value})}
+                    placeholder="Enter pincode"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end space-x-2 mt-4">
+                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>
+                <Button onClick={handleAddCitizen} disabled={addCitizenMutation.isPending}>
+                  {addCitizenMutation.isPending ? "Adding..." : "Add Citizen"}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
           <Button variant="outline">
             <Download className="h-4 w-4 mr-2" />
             Export Data
@@ -257,10 +437,20 @@ export default function AadhaarDashboard() {
                               <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-800">
                                 <Eye className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="sm" className="text-orange-600 hover:text-orange-800">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="text-orange-600 hover:text-orange-800"
+                                onClick={() => handleEditCitizen(citizen)}
+                              >
                                 <Edit className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-800">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="text-red-600 hover:text-red-800"
+                                onClick={() => handleDeleteCitizen(citizen.aadhaarNumber)}
+                              >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
@@ -298,6 +488,89 @@ export default function AadhaarDashboard() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Edit Citizen Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Edit Citizen</DialogTitle>
+            </DialogHeader>
+            {editingCitizen && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Aadhaar Number</Label>
+                  <Input
+                    value={editingCitizen.aadhaarNumber}
+                    disabled
+                    className="bg-gray-100"
+                  />
+                </div>
+                <div>
+                  <Label>Full Name</Label>
+                  <Input
+                    value={editingCitizen.fullName}
+                    onChange={(e) => setEditingCitizen({...editingCitizen, fullName: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label>Date of Birth</Label>
+                  <Input
+                    type="date"
+                    value={editingCitizen.dateOfBirth}
+                    onChange={(e) => setEditingCitizen({...editingCitizen, dateOfBirth: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label>Gender</Label>
+                  <Select value={editingCitizen.gender} onValueChange={(value) => setEditingCitizen({...editingCitizen, gender: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Male">Male</SelectItem>
+                      <SelectItem value="Female">Female</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="col-span-2">
+                  <Label>Address</Label>
+                  <Textarea
+                    value={editingCitizen.address}
+                    onChange={(e) => setEditingCitizen({...editingCitizen, address: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label>District</Label>
+                  <Input
+                    value={editingCitizen.district}
+                    onChange={(e) => setEditingCitizen({...editingCitizen, district: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label>State</Label>
+                  <Input
+                    value={editingCitizen.state}
+                    onChange={(e) => setEditingCitizen({...editingCitizen, state: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label>Pincode</Label>
+                  <Input
+                    value={editingCitizen.pincode}
+                    onChange={(e) => setEditingCitizen({...editingCitizen, pincode: e.target.value})}
+                  />
+                </div>
+              </div>
+            )}
+            <div className="flex justify-end space-x-2 mt-4">
+              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
+              <Button onClick={handleUpdateCitizen} disabled={updateCitizenMutation.isPending}>
+                {updateCitizenMutation.isPending ? "Updating..." : "Update Citizen"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );

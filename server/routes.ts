@@ -282,6 +282,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete voter
+  app.delete("/api/voters/:voterId", authenticate, async (req, res) => {
+    try {
+      const success = await storage.deleteVoter(req.params.voterId);
+      if (!success) {
+        return res.status(404).json({ message: "Voter not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete voter" });
+    }
+  });
+
+  // Create new candidate
+  app.post("/api/candidates", authenticate, async (req, res) => {
+    try {
+      const validatedData = insertCandidateSchema.parse(req.body);
+      const candidate = await storage.createCandidate(validatedData);
+      res.status(201).json(candidate);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid candidate data" });
+    }
+  });
+
+  // Delete candidate
+  app.delete("/api/candidates/:candidateId", authenticate, async (req, res) => {
+    try {
+      const success = await storage.deleteCandidate(req.params.candidateId);
+      if (!success) {
+        return res.status(404).json({ message: "Candidate not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete candidate" });
+    }
+  });
+
   // Get candidates by constituency
   app.get("/api/candidates/:constituency", async (req, res) => {
     try {

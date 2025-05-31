@@ -166,11 +166,28 @@ export type Citizen = typeof citizens.$inferSelect;
 export type InsertCitizen = z.infer<typeof insertCitizenSchema>;
 
 export type Voter = typeof voters.$inferSelect;
-export type InsertVoter = z.infer<typeof insertVoterSchema>;
+export type InsertVoter = typeof voters.$inferInsert;
+
+// Candidates table
+export const candidates = pgTable("candidates", {
+  id: serial("id").primaryKey(),
+  name: varchar("name").notNull(),
+  party: varchar("party").notNull(),
+  constituency: varchar("constituency").notNull(),
+  qualification: varchar("qualification"),
+  experience: varchar("experience"),
+  photoUrl: varchar("photo_url"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
 
 export type Candidate = typeof candidates.$inferSelect;
-export type InsertCandidate = z.infer<typeof insertCandidateSchema>;
+export type InsertCandidate = typeof candidates.$inferInsert;
 
+// Zod schemas
+export const insertCandidateSchema = createInsertSchema(candidates);
+export const insertVoterSchema = createInsertSchema(voters);
+export const insertCitizenSchema = createInsertSchema(citizens);
 export type Vote = typeof votes.$inferSelect;
 export type InsertVote = z.infer<typeof insertVoteSchema>;
 
