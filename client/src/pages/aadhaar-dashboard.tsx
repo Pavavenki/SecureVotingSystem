@@ -103,7 +103,13 @@ export default function AadhaarDashboard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(citizenData),
       });
-      if (!response.ok) throw new Error("Failed to add citizen");
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (errorData.error && errorData.error.includes('duplicate key')) {
+          throw new Error("This Aadhaar number is already registered. Please use a different number.");
+        }
+        throw new Error(errorData.message || "Failed to add citizen");
+      }
       return response.json();
     },
     onSuccess: () => {
@@ -111,6 +117,10 @@ export default function AadhaarDashboard() {
       queryClient.invalidateQueries({ queryKey: ["/api/analytics"] });
       setIsAddDialogOpen(false);
       resetForm();
+      alert("Citizen added successfully!");
+    },
+    onError: (error: Error) => {
+      alert(`Error: ${error.message}`);
     },
   });
 
