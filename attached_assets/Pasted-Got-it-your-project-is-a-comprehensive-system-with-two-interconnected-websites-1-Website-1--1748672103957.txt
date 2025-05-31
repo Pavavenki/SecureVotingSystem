@@ -1,0 +1,214 @@
+Got it — your project is a comprehensive system with two interconnected websites:
+
+1. **Website 1: Aadhaar Management System (Admin Only)**
+2. **Website 2: AI + Blockchain Voting System (Voters & Admins)**
+
+I’ll break down a **detailed prompt / specification** for you that you can use as a blueprint or even feed into a coding assistant or developer. This will cover architecture, tech stack recommendations, core features, API design, database design, and integration points.
+
+---
+
+# Detailed Project Specification Prompt for Your Two Connected Websites
+
+---
+
+## **Project Overview**
+
+Build two connected websites hosted on Replit or your preferred cloud platform:
+
+* **Website 1:** Aadhaar Management (Admin-only interface to manage citizen data including biometric data and images)
+* **Website 2:** AI & Blockchain-based Voting System (Separate logins for voters & admin, biometric verification integrated with Website 1, blockchain-backed vote storage, constituency-based candidate display, multilingual support)
+
+---
+
+## **Technology Stack Recommendations**
+
+* Backend: **Python (Flask / FastAPI)** or **Node.js (Express)**
+* Frontend: React.js or Vanilla JS + HTML/CSS
+* Database: **MongoDB Atlas** or **PostgreSQL** for real-time storage + efficient queries
+* Biometric Processing: Use Python libraries (like **OpenCV** for face recognition, fingerprint SDK if available) or third-party APIs
+* Blockchain: Use a private Ethereum blockchain or a blockchain simulation library for vote immutability (e.g., Hyperledger, Ethereum testnet with smart contracts in Solidity)
+* Authentication: JWT-based authentication for admin and voter sessions
+* Hosting: Replit with HTTPS enabled (or other cloud providers if needed)
+
+---
+
+## **Website 1: Aadhaar Management System**
+
+### User Roles
+
+* **Admin:** Predefined login credentials (userID/password) only
+
+### Features
+
+1. **Admin Login**
+
+   * Secure login form with userID/password
+   * Session management to keep admin logged in
+
+2. **Citizen Management Dashboard**
+
+   * Add citizen record:
+
+     * Username, DOB, Aadhaar Number, Address, District, State, Pincode, Gender
+     * Upload multiple fingerprints (images or fingerprint template files)
+     * Upload user photo (for facial recognition)
+   * Edit/Delete citizen record
+   * Search citizens by District, State (with filters and pagination)
+   * View detailed citizen data
+
+3. **APIs to expose for Website 2 integration**
+
+   * `GET /api/citizens/<aadhaar_number>` — Return all citizen data (including biometric data hashes or templates) for verification
+   * `POST /api/verify/fingerprint` — Receive fingerprint data and Aadhaar number, return match result
+   * `POST /api/verify/face` — Receive face image and Aadhaar number, return match result
+
+### Database Design Example (MongoDB)
+
+* **Citizens collection:**
+
+  ```json
+  {
+    "aadhaar_number": "1234-5678-9012",
+    "username": "John Doe",
+    "dob": "1990-01-01",
+    "address": "123 Main St",
+    "district": "Mumbai",
+    "state": "Maharashtra",
+    "pincode": "400001",
+    "gender": "Male",
+    "photo_url": "https://.../photo.jpg",
+    "fingerprints": {
+      "left_thumb": "template_or_hash",
+      "right_index": "template_or_hash",
+      ...
+    }
+  }
+  ```
+
+---
+
+## **Website 2: AI & Blockchain Voting System**
+
+### User Roles
+
+* **Voter:** Login using voter ID and password
+* **Admin:** Login using separate admin credentials (same login panel)
+
+### Features
+
+#### Common Login Page
+
+* Login for voter/admin
+* Redirect based on role after login
+
+#### Admin Panel (After Admin Login)
+
+* View/Edit/Delete voter details (voter ID, Aadhaar Number, Username, DOB, status: active/blocked/suspended)
+* View/Edit/Delete candidate details (name, party, district, symbol URL)
+* Results Page:
+
+  * Show election results by constituency via dropdown
+  * Display vote percentages graphically
+  * Results are read-only and stored securely on blockchain (no edits allowed)
+
+#### Voter Panel (After Voter Login)
+
+1. **Personal Details Verification**
+
+   * Show voter personal details retrieved from database (including linkage to Aadhaar data)
+   * User confirms verification with checkbox to proceed
+
+2. **Biometric Verification**
+
+   * **Fingerprint scanning:**
+
+     * Capture fingerprint using sensor (or simulated input)
+     * Send fingerprint + Aadhaar number to Website 1 API to verify match (GET & POST)
+     * Only proceed if fingerprint matches
+   * **Facial Recognition:**
+
+     * Capture live face image via webcam
+     * Send to Website 1 API for verification against stored photo
+     * Only proceed if face matches
+
+3. **Voting Page**
+
+   * Display candidates filtered by voter’s constituency/district
+   * Candidate details: Name, Party, Symbol (via URL)
+   * Voter selects one candidate and submits vote
+   * Votes stored anonymously on blockchain for immutability
+   * Prevent double voting by tracking voter ID with vote flag
+
+4. **Thank You Page**
+
+   * Show timestamp of vote submission
+
+#### Additional Requirements
+
+* Multilingual support (dropdown for Indian states languages, e.g., Hindi, Tamil, Telugu, Marathi)
+* UI updates based on language selected
+* All API communication secured (JWT tokens, HTTPS)
+
+---
+
+## **Interconnection Between Websites**
+
+* Website 2 calls Website 1 APIs for:
+
+  * Biometric verification (fingerprint and face)
+  * Retrieving voter Aadhaar-linked data
+
+* API endpoints should require authentication (API keys or tokens)
+
+---
+
+## **Blockchain Integration for Voting**
+
+* Deploy smart contract to track votes anonymously by candidate and constituency
+* On vote submission, Website 2 calls the blockchain contract to record vote
+* Results page queries blockchain data and presents summary (percentage + charts)
+* Ensure blockchain immutability prevents tampering/deletion of votes
+
+---
+
+## **Summary: APIs Needed**
+
+| API Endpoint                      | Website   | Purpose                               |
+| --------------------------------- | --------- | ------------------------------------- |
+| POST `/api/admin/login`           | Both      | Admin authentication                  |
+| POST `/api/voter/login`           | Website 2 | Voter authentication                  |
+| POST `/api/citizens`              | Website 1 | Add citizen record                    |
+| GET `/api/citizens/<aadhaar>`     | Website 1 | Get citizen details for verification  |
+| POST `/api/citizens/update`       | Website 1 | Update citizen info                   |
+| DELETE `/api/citizens/<aadhaar>`  | Website 1 | Delete citizen record                 |
+| POST `/api/verify/fingerprint`    | Website 1 | Verify fingerprint for Aadhaar number |
+| POST `/api/verify/face`           | Website 1 | Verify face image for Aadhaar number  |
+| GET `/api/voters`                 | Website 2 | Admin get voter list                  |
+| POST `/api/voters`                | Website 2 | Admin add voter                       |
+| PATCH `/api/voters/<id>`          | Website 2 | Admin update voter                    |
+| DELETE `/api/voters/<id>`         | Website 2 | Admin delete voter                    |
+| GET `/api/candidates`             | Website 2 | Admin get candidate list              |
+| POST `/api/candidates`            | Website 2 | Admin add candidate                   |
+| PATCH `/api/candidates/<id>`      | Website 2 | Admin update candidate                |
+| DELETE `/api/candidates/<id>`     | Website 2 | Admin delete candidate                |
+| POST `/api/vote`                  | Website 2 | Submit voter vote (calls blockchain)  |
+| GET `/api/results/<constituency>` | Website 2 | Get election results by constituency  |
+
+---
+
+## **Next Steps**
+
+* **Design database schemas** for citizens, voters, candidates, votes
+* **Set up authentication & sessions** for admin and voter logins
+* **Develop Website 1 APIs** with biometric storage and verification
+* **Develop Website 2 UI + logic** for login, biometric verification (integrate webcam & fingerprint), voting, multilingual support
+* **Implement blockchain smart contract** for vote immutability
+* **Link Website 2 calls to Website 1 APIs securely**
+
+---
+
+If you want, I can help generate starter code templates or example snippets for any part (e.g., Flask API for Aadhaar management, biometric API structure, blockchain smart contract example, frontend login form with role-based redirect, fingerprint/face verification mock).
+
+---
+
+Would you like me to start generating code for Website 1 (Aadhaar Management Admin panel) or Website 2 (Voting system)? Or the API integration and blockchain contract? Just let me know!
