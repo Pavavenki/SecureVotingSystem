@@ -164,6 +164,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get voter profile for logged-in voter
+  app.get("/api/voter-profile", async (req: AuthenticatedRequest, res) => {
+    try {
+      if (!req.session.user || req.session.user.role !== "voter") {
+        return res.status(401).json({ message: "Not authenticated as voter" });
+      }
+      
+      const voter = await storage.getVoter(req.session.user.userId);
+      if (!voter) {
+        return res.status(404).json({ message: "Voter not found" });
+      }
+      
+      res.json(voter);
+    } catch (error) {
+      console.error("Error fetching voter profile:", error);
+      res.status(500).json({ message: "Failed to fetch voter profile" });
+    }
+  });
+
   // === AADHAAR MANAGEMENT ROUTES ===
 
   // Get all citizens
