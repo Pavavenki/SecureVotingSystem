@@ -150,6 +150,35 @@ export class DatabaseStorage implements IStorage {
 
   // Candidate operations
   async getAllCandidates(): Promise<Candidate[]> {
+    return await db.select().from(candidates).orderBy(desc(candidates.createdAt));
+  }
+
+  async createCandidate(candidate: InsertCandidate): Promise<Candidate> {
+    const [newCandidate] = await db.insert(candidates).values(candidate).returning();
+    return newCandidate;
+  }
+
+  async updateCandidate(candidateId: string, updates: Partial<InsertCandidate>): Promise<Candidate | undefined> {
+    const [updatedCandidate] = await db
+      .update(candidates)
+      .set(updates)
+      .where(eq(candidates.id, parseInt(candidateId)))
+      .returning();
+    return updatedCandidate;
+  }
+
+  async deleteCandidate(candidateId: string): Promise<boolean> {
+    const result = await db.delete(candidates).where(eq(candidates.id, parseInt(candidateId)));
+    return result.rowCount > 0;
+  }
+
+  async deleteVoter(voterId: string): Promise<boolean> {
+    const result = await db.delete(voters).where(eq(voters.voterId, voterId));
+    return result.rowCount > 0;
+  }
+
+  // Candidate operations
+  async getAllCandidates(): Promise<Candidate[]> {
     return await db.select().from(candidates).where(eq(candidates.isActive, true));
   }
 

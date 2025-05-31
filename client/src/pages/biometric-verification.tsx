@@ -44,7 +44,10 @@ export default function BiometricVerification() {
       }));
       
       if (result.isMatch) {
-        setCurrentStep("face");
+        // Auto-proceed to face verification after 1 second
+        setTimeout(() => {
+          setCurrentStep("face");
+        }, 1000);
       }
     } catch (error) {
       setVerificationStatus(prev => ({
@@ -79,6 +82,17 @@ export default function BiometricVerification() {
   const canProceedToVoting = 
     verificationStatus.fingerprint.status === "verified" && 
     verificationStatus.face.status === "verified";
+
+  // Auto-proceed to voting when both verifications complete
+  useEffect(() => {
+    if (canProceedToVoting && currentStep !== "complete") {
+      setCurrentStep("complete");
+      // Auto-navigate after 2 seconds
+      setTimeout(() => {
+        setLocation("/voting/vote");
+      }, 2000);
+    }
+  }, [canProceedToVoting, currentStep, setLocation]);
 
   const getStatusIcon = (status: string) => {
     switch (status) {

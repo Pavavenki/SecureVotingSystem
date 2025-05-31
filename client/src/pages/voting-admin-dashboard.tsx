@@ -1,11 +1,15 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { apiRequest } from "@/lib/queryClient";
 import { 
   Vote, 
   Users, 
@@ -25,6 +29,24 @@ import {
 
 export default function VotingAdminDashboard() {
   const [selectedConstituency, setSelectedConstituency] = useState("");
+  const [isAddVoterDialogOpen, setIsAddVoterDialogOpen] = useState(false);
+  const [isAddCandidateDialogOpen, setIsAddCandidateDialogOpen] = useState(false);
+  const [newVoter, setNewVoter] = useState({
+    voterId: "",
+    aadhaarNumber: "",
+    password: "",
+    fullName: "",
+    constituency: ""
+  });
+  const [newCandidate, setNewCandidate] = useState({
+    name: "",
+    party: "",
+    constituency: "",
+    qualification: "",
+    experience: ""
+  });
+
+  const queryClient = useQueryClient();
   
   // Fetch voting statistics
   const { data: stats } = useQuery({
@@ -53,6 +75,51 @@ export default function VotingAdminDashboard() {
   const { data: results } = useQuery({
     queryKey: [`/api/results/${selectedConstituency}`],
     enabled: !!selectedConstituency,
+  });
+
+  // CRUD Mutations
+  const addVoterMutation = useMutation({
+    mutationFn: async (voterData: any) => {
+      const response = await apiRequest("POST", "/api/voters", voterData);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/voters"] });
+      setIsAddVoterDialogOpen(false);
+      setNewVoter({ voterId: "", aadhaarNumber: "", password: "", fullName: "", constituency: "" });
+    }
+  });
+
+  const addCandidateMutation = useMutation({
+    mutationFn: async (candidateData: any) => {
+      const response = await apiRequest("POST", "/api/candidates", candidateData);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/candidates"] });
+      setIsAddCandidateDialogOpen(false);
+      setNewCandidate({ name: "", party: "", constituency: "", qualification: "", experience: "" });
+    }
+  });
+
+  const deleteVoterMutation = useMutation({
+    mutationFn: async (voterId: string) => {
+      const response = await apiRequest("DELETE", `/api/voters/${voterId}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/voters"] });
+    }
+  });
+
+  const deleteCandidateMutation = useMutation({
+    mutationFn: async (candidateId: string) => {
+      const response = await apiRequest("DELETE", `/api/candidates/${candidateId}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/candidates"] });
+    }
   });
 
   const displayStats = stats || {
@@ -271,10 +338,74 @@ export default function VotingAdminDashboard() {
                       <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                       <Input placeholder="Search voters..." className="pl-10 w-80" />
                     </div>
-                    <Button className="bg-green-600 hover:bg-green-700">
-                      <UserPlus className="h-4 w-4 mr-2" />
-                      Add Voter
-                    </Button>
+                    <Dialog open={isAddVoterDialogOpen} onOpenChange={setIsAddVoterDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button className="bg-green-600 hover:bg-green-700">
+                          <UserPlus className="h-4 w-4 mr-2" />
+                          Add Voter
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Add New Voter</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div>
+                            <Label>Voter ID</Label>
+                            <Input
+                              value={newVoter.voterId}
+                              onChange={(e) => setNewVoter({...newVoter, voterId: e.target.value})}
+                              placeholder="VTR123456789"
+                            />
+                          </div>
+                          <div>
+                            <Label>Aadhaar Number</Label>
+                            <Input
+                              value={newVoter.aadhaarNumber}
+                              onChange={(e) => setNewVoter({...newVoter, aadhaarNumber: e.target.value})}
+                              placeholder="1234-5678-9012"
+                            />
+                          </div>
+                          <div>
+                            <Label>Password</Label>
+                            <Input
+                              type="password"
+                              value={newVoter.password}
+                              onChange={(e) => setNewVoter({...newVoter, password: e.target.value})}
+                              placeholder="Enter password"
+                            />
+                          </div>
+                          <div>
+                            <Label>Full Name</Label>
+                            <Input
+                              value={newVoter.fullName}
+                              onChange={(e) => setNewVoter({...newVoter, fullName: e.target.value})}
+                              placeholder="Enter full name"
+                            />
+                          </div>
+                          <div>
+                            <Label>Constituency</Label>
+                            <Select value={newVoter.constituency} onValueChange={(value) => setNewVoter({...newVoter, constituency: value})}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select constituency" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Mumbai North - 24">Mumbai North - 24</SelectItem>
+                                <SelectItem value="Mumbai South - 25">Mumbai South - 25</SelectItem>
+                                <SelectItem value="Thane - 26">Thane - 26</SelectItem>
+                                <SelectItem value="Pune - 27">Pune - 27</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div className="flex justify-end space-x-2 mt-4">
+                          <Button variant="outline" onClick={() => setIsAddVoterDialogOpen(false)}>Cancel</Button>
+                          <Button onClick={() => addVoterMutation.mutate(newVoter)} disabled={addVoterMutation.isPending}>
+                            {addVoterMutation.isPending ? "Adding..." : "Add Voter"}
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 </div>
 
@@ -339,7 +470,16 @@ export default function VotingAdminDashboard() {
                                 <Button variant="ghost" size="sm" className="text-orange-600">
                                   <Edit className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="sm" className="text-red-600">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="text-red-600"
+                                  onClick={() => {
+                                    if (confirm("Are you sure you want to delete this voter?")) {
+                                      deleteVoterMutation.mutate(voter.voterId);
+                                    }
+                                  }}
+                                >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </div>
@@ -356,10 +496,73 @@ export default function VotingAdminDashboard() {
               <TabsContent value="candidates" className="p-6">
                 <div className="flex justify-between items-center mb-6">
                   <h4 className="text-lg font-medium text-gray-900">Candidate Management</h4>
-                  <Button className="bg-green-600 hover:bg-green-700">
-                    <UserPlus className="h-4 w-4 mr-2" />
-                    Add Candidate
-                  </Button>
+                  <Dialog open={isAddCandidateDialogOpen} onOpenChange={setIsAddCandidateDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button className="bg-green-600 hover:bg-green-700">
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Add Candidate
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Add New Candidate</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label>Name</Label>
+                          <Input
+                            value={newCandidate.name}
+                            onChange={(e) => setNewCandidate({...newCandidate, name: e.target.value})}
+                            placeholder="Enter candidate name"
+                          />
+                        </div>
+                        <div>
+                          <Label>Party</Label>
+                          <Input
+                            value={newCandidate.party}
+                            onChange={(e) => setNewCandidate({...newCandidate, party: e.target.value})}
+                            placeholder="Enter party name"
+                          />
+                        </div>
+                        <div>
+                          <Label>Constituency</Label>
+                          <Select value={newCandidate.constituency} onValueChange={(value) => setNewCandidate({...newCandidate, constituency: value})}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select constituency" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Mumbai North - 24">Mumbai North - 24</SelectItem>
+                              <SelectItem value="Mumbai South - 25">Mumbai South - 25</SelectItem>
+                              <SelectItem value="Thane - 26">Thane - 26</SelectItem>
+                              <SelectItem value="Pune - 27">Pune - 27</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label>Qualification</Label>
+                          <Input
+                            value={newCandidate.qualification}
+                            onChange={(e) => setNewCandidate({...newCandidate, qualification: e.target.value})}
+                            placeholder="Enter qualification"
+                          />
+                        </div>
+                        <div>
+                          <Label>Experience</Label>
+                          <Input
+                            value={newCandidate.experience}
+                            onChange={(e) => setNewCandidate({...newCandidate, experience: e.target.value})}
+                            placeholder="Enter experience"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex justify-end space-x-2 mt-4">
+                        <Button variant="outline" onClick={() => setIsAddCandidateDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={() => addCandidateMutation.mutate(newCandidate)} disabled={addCandidateMutation.isPending}>
+                          {addCandidateMutation.isPending ? "Adding..." : "Add Candidate"}
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -385,7 +588,16 @@ export default function VotingAdminDashboard() {
                                 <Edit className="h-3 w-3 mr-1" />
                                 Edit
                               </Button>
-                              <Button variant="outline" size="sm" className="flex-1 text-red-600 border-red-200">
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="flex-1 text-red-600 border-red-200"
+                                onClick={() => {
+                                  if (confirm("Are you sure you want to remove this candidate?")) {
+                                    deleteCandidateMutation.mutate(candidate.id);
+                                  }
+                                }}
+                              >
                                 <Trash2 className="h-3 w-3 mr-1" />
                                 Remove
                               </Button>
