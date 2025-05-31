@@ -20,7 +20,7 @@ const translations = {
     'back': 'Back',
     'next': 'Next',
     'language': 'Language',
-    
+
     // Voting Portal
     'voting_portal': 'Voting Portal',
     'voter_login': 'Voter Login',
@@ -56,7 +56,7 @@ const translations = {
     'back': 'वापस',
     'next': 'आगे',
     'language': 'भाषा',
-    
+
     // Voting Portal
     'voting_portal': 'मतदान पोर्टल',
     'voter_login': 'मतदाता लॉगिन',
@@ -81,7 +81,7 @@ const translations = {
     'qualification': 'योग्यता',
     'experience': 'अनुभव',
     'nota': 'उपरोक्त में से कोई नहीं (नोटा)',
-    
+
     // Admin Dashboard
     'admin_dashboard': 'एडमिन डैशबोर्ड',
     'voting_admin': 'वोटिंग एडमिन',
@@ -117,7 +117,7 @@ const translations = {
     'back': 'వెనుకకు',
     'next': 'తదుపరి',
     'language': 'భాష',
-    
+
     // Voting Portal
     'voting_portal': 'ఓటింగ్ పోర్టల్',
     'voter_login': 'ఓటరు లాగిన్',
@@ -142,7 +142,7 @@ const translations = {
     'qualification': 'అర్హత',
     'experience': 'అనుభవం',
     'nota': 'పైవారిలో ఎవరూ లేరు (నోటా)',
-    
+
     // Admin Dashboard
     'admin_dashboard': 'అడ్మిన్ డ్యాష్‌బోర్డ్',
     'voting_admin': 'వోటింగ్ అడ్మిన్',
@@ -170,32 +170,40 @@ const translations = {
   }
 };
 
-interface LanguageProviderProps {
-  children: ReactNode;
+type Language = 'en' | 'hi';
+type TranslationKey = keyof typeof translations.en;
+
+interface LanguageContextType {
+  language: Language;
+  setLanguage: (lang: Language) => void;
+  t: (key: TranslationKey) => string;
 }
 
-export function LanguageProvider({ children }: LanguageProviderProps) {
-  const [language, setLanguage] = useState('en');
+const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+
+export function LanguageProvider({ children }: { children: React.ReactNode }) {
+  const [language, setLanguage] = useState<Language>('en');
 
   useEffect(() => {
-    const savedLanguage = localStorage.getItem('voting-language');
-    if (savedLanguage && ['en', 'hi', 'te'].includes(savedLanguage)) {
+    const savedLanguage = localStorage.getItem('language') as Language;
+    if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'hi')) {
       setLanguage(savedLanguage);
     }
   }, []);
 
-  const handleSetLanguage = (lang: string) => {
+  const handleSetLanguage = (lang: Language) => {
     setLanguage(lang);
-    localStorage.setItem('voting-language', lang);
+    localStorage.setItem('language', lang);
   };
 
-  const t = (key: string): string => {
-    const langTranslations = translations[language as keyof typeof translations] || translations.en;
-    return langTranslations[key as keyof typeof langTranslations] || key;
+  const t = (key: TranslationKey): string => {
+    return translations[language][key] || key;
   };
+
+  const value = { language, setLanguage: handleSetLanguage, t };
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage: handleSetLanguage, t }}>
+    <LanguageContext.Provider value={value}>
       {children}
     </LanguageContext.Provider>
   );

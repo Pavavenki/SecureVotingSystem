@@ -92,7 +92,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/login", async (req: AuthenticatedRequest, res) => {
     try {
       const { userId, password } = req.body;
-      
+
       // Demo admin credentials
       if (userId === "admin" && password === "admin123") {
         req.session.user = { userId, role: "admin", system: "aadhaar" };
@@ -110,7 +110,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/voting/login", async (req: AuthenticatedRequest, res) => {
     try {
       const { userId, password, role } = req.body;
-      
+
       if (role === "admin") {
         // Voting admin login
         if (userId === "votingadmin" && password === "admin123") {
@@ -122,7 +122,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         // Voter login - create demo data if needed
         await createDemoDataIfNeeded();
-        
+
         const voter = await storage.getVoter(userId);
         if (voter && voter.password === password) {
           req.session.user = { userId: voter.voterId, role: "voter", system: "voting" };
@@ -165,7 +165,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 50;
       const offset = (page - 1) * limit;
-      
+
       const citizens = await storage.getAllCitizens(limit, offset);
       res.json(citizens);
     } catch (error) {
@@ -243,7 +243,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const verifiedBiometrics = citizens.filter(c => c.biometricStatus === 'verified').length;
       const pendingUpdates = citizens.filter(c => c.biometricStatus === 'pending').length;
       const failedVerifications = citizens.filter(c => c.biometricStatus === 'failed').length;
-      
+
       const stateDistribution = citizens.reduce((acc: any, citizen) => {
         acc[citizen.state] = (acc[citizen.state] || 0) + 1;
         return acc;
@@ -269,24 +269,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // === BIOMETRIC VERIFICATION ROUTES ===
 
-  // Verify fingerprint
+  // Biometric verification endpoints
   app.post("/api/verify/fingerprint", async (req, res) => {
     try {
       const { aadhaarNumber, fingerprintData } = req.body;
+
+      if (!aadhaarNumber || !fingerprintData) {
+        return res.status(400).json({ message: "Missing required parameters" });
+      }
+
       const result = await storage.verifyFingerprint(aadhaarNumber, fingerprintData);
+
+      // Log verification attempt
+      await storage.logBiometricVerification({
+        aadhaarNumber,
+        verificationType: "fingerprint",
+        isMatch: result.isMatch,
+        confidence: result.confidence,
+        timestamp: new Date()
+      });
+
       res.json(result);
     } catch (error) {
+      console.error("Fingerprint verification error:", error);
       res.status(500).json({ message: "Fingerprint verification failed" });
     }
   });
 
-  // Verify face
   app.post("/api/verify/face", async (req, res) => {
     try {
       const { aadhaarNumber, faceData } = req.body;
+
+      if (!aadhaarNumber || !faceData) {
+        return res.status(400).json({ message: "Missing required parameters" });
+      }
+
       const result = await storage.verifyFace(aadhaarNumber, faceData);
+
+      // Log verification attempt
+      await storage.logBiometricVerification({
+        aadhaarNumber,
+        verificationType: "face",
+        isMatch: result.isMatch,
+        confidence: result.confidence,
+        timestamp: new Date()
+      });
+
       res.json(result);
     } catch (error) {
+      console.error("Face verification error:", error);
       res.status(500).json({ message: "Face verification failed" });
     }
   });
@@ -387,7 +418,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { candidateId, isNota, constituency } = req.body;
       const voterId = req.session.user.userId;
-      
+
       // Check if voter has already voted
       const voter = await storage.getVoter(voterId);
       if (!voter) {
@@ -424,7 +455,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const votes = await storage.getVotesByConstituency(req.params.constituency);
       const candidates = await storage.getCandidatesByConstituency(req.params.constituency);
-      
+
       // Calculate results
       const results = candidates.map(candidate => {
         const candidateVotes = votes.filter(vote => vote.candidateId === candidate.id);
@@ -475,7 +506,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     ws.on('message', (message) => {
       try {
         const data = JSON.parse(message.toString());
-        
+
         // Handle different WebSocket message types
         switch (data.type) {
           case 'subscribe_results':
@@ -486,7 +517,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               timestamp: new Date().toISOString()
             }));
             break;
-          
+
           case 'biometric_status':
             // Real-time biometric verification status
             ws.send(JSON.stringify({
