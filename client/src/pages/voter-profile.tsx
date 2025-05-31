@@ -287,6 +287,24 @@ export default function VoterProfile() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Voting Section */}
+        {!voter.hasVoted && (
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle>Cast Your Vote</CardTitle>
+              <p className="text-gray-600">Vote for your preferred candidate in {voter.constituency}</p>
+            </CardHeader>
+            <CardContent>
+              <Button 
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3"
+                onClick={() => window.location.href = "/voting/verification"}
+              >
+                Proceed to Vote
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
