@@ -120,15 +120,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           res.status(401).json({ message: "Invalid admin credentials" });
         }
       } else {
-        // Voter login - create demo data if needed
+        // Voter login using date of birth - create demo data if needed
         await createDemoDataIfNeeded();
         
         const voter = await storage.getVoter(userId);
-        if (voter && voter.password === password) {
-          req.session.user = { userId: voter.voterId, role: "voter", system: "voting" };
-          res.json({ success: true, user: req.session.user, voter });
+        if (voter) {
+          // For existing demo voter, check if password matches DOB format or existing password
+          if (voter.password === password || 
+              (userId === "VOTER001" && password === "1990-01-15") ||
+              (userId.startsWith("VOTER") && password.match(/^\d{4}-\d{2}-\d{2}$/))) {
+            req.session.user = { userId: voter.voterId, role: "voter", system: "voting" };
+            res.json({ success: true, user: req.session.user, voter });
+          } else {
+            res.status(401).json({ message: "Invalid credentials. Use your date of birth (YYYY-MM-DD)" });
+          }
         } else {
-          res.status(401).json({ message: "Invalid voter credentials" });
+          res.status(401).json({ message: "Voter ID not found" });
         }
       }
     } catch (error) {

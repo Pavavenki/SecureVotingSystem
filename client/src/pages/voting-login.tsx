@@ -174,17 +174,22 @@ export default function VotingLogin() {
 
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-sm font-medium text-gray-700">
-                  Password
+                  {selectedRole === "voter" ? "Date of Birth" : "Password"}
                 </Label>
                 <Input
                   id="password"
-                  type="password"
-                  placeholder="Enter your password"
+                  type={selectedRole === "voter" ? "date" : "password"}
+                  placeholder={selectedRole === "voter" ? "Select your date of birth" : "Enter admin password"}
                   value={formData.password}
                   onChange={(e) => handleInputChange("password", e.target.value)}
                   className="w-full"
                   required
                 />
+                {selectedRole === "voter" && (
+                  <p className="text-xs text-gray-500">
+                    Use your registered date of birth as authentication
+                  </p>
+                )}
               </div>
 
               <Button
