@@ -235,6 +235,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Analytics endpoint
+  app.get("/api/analytics", authenticate, async (req, res) => {
+    try {
+      const citizens = await storage.getAllCitizens();
+      const totalCitizens = citizens.length;
+      const verifiedBiometrics = citizens.filter(c => c.biometricStatus === 'verified').length;
+      const pendingUpdates = citizens.filter(c => c.biometricStatus === 'pending').length;
+      const failedVerifications = citizens.filter(c => c.biometricStatus === 'failed').length;
+      
+      const stateDistribution = citizens.reduce((acc: any, citizen) => {
+        acc[citizen.state] = (acc[citizen.state] || 0) + 1;
+        return acc;
+      }, {});
+
+      const districtDistribution = citizens.reduce((acc: any, citizen) => {
+        acc[citizen.district] = (acc[citizen.district] || 0) + 1;
+        return acc;
+      }, {});
+
+      res.json({
+        totalCitizens,
+        verifiedBiometrics,
+        pendingUpdates,
+        failedVerifications,
+        stateDistribution,
+        districtDistribution
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch analytics" });
+    }
+  });
+
   // === BIOMETRIC VERIFICATION ROUTES ===
 
   // Verify fingerprint
