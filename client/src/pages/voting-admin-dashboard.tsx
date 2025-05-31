@@ -113,6 +113,7 @@ export default function VotingAdminDashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/voters"] });
+      setIsAddVoterDialogOpen(false);
       setEditingVoter(null);
       setNewVoter({ voterId: "", aadhaarNumber: "", password: "", fullName: "", constituency: "" });
     }
