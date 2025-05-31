@@ -9,6 +9,7 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import Welcome from "@/pages/welcome";
 import AadhaarLogin from "@/pages/aadhaar-login";
 import AadhaarDashboard from "@/pages/aadhaar-dashboard";
+import AadhaarSimple from "@/pages/aadhaar-simple";
 import VotingLogin from "@/pages/voting-login";
 import VoterVerification from "@/pages/voter-verification";
 import BiometricVerification from "@/pages/biometric-verification";
@@ -24,7 +25,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Welcome} />
       <Route path="/aadhaar/login" component={AadhaarLogin} />
-      <Route path="/aadhaar/dashboard" component={AadhaarDashboard} />
+      <Route path="/aadhaar/dashboard" component={AadhaarSimple} />
       <Route path="/voting/login" component={VotingLogin} />
       <Route path="/voting/verification" component={VoterVerification} />
       <Route path="/voting/biometric" component={BiometricVerification} />

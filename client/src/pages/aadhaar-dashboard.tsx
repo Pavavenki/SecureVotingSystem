@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { apiRequest } from "@/lib/queryClient";
 import PhotoCapture from "@/components/photo-capture";
 import FingerprintScanner from "@/components/fingerprint-scanner";
+import SimpleCitizenForm from "./simple-citizen-form";
 import { 
   Users, 
   Fingerprint, 
