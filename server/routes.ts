@@ -36,15 +36,12 @@ async function createDemoDataIfNeeded() {
       await storage.createCitizen({
         aadhaarNumber: "1234-5678-9012",
         fullName: "Rajesh Kumar Singh",
-        dateOfBirth: new Date("1990-05-15"),
+        dateOfBirth: "1990-05-15",
         gender: "Male",
-        phoneNumber: "9876543210",
-        email: "rajesh.singh@email.com",
         address: "123 Main Street, Mumbai",
         district: "Mumbai",
         state: "Maharashtra",
         pincode: "400001",
-        fingerprintTemplate: "demo_fingerprint_template",
         faceTemplate: "demo_face_template"
       });
 

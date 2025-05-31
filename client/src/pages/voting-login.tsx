@@ -6,14 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { ArrowLeft, Vote, User, UserCog, Globe } from "lucide-react";
 
 export default function VotingLogin() {
   const [, setLocation] = useLocation();
   const [selectedRole, setSelectedRole] = useState<"voter" | "admin">("voter");
-  const [selectedLanguage, setSelectedLanguage] = useState("en");
+  const { language, setLanguage, t } = useLanguage();
   const [formData, setFormData] = useState({
     userId: "",
     password: ""
@@ -108,8 +110,8 @@ export default function VotingLogin() {
               </Label>
               <select
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                value={selectedLanguage}
-                onChange={(e) => setSelectedLanguage(e.target.value)}
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
               >
                 {languages.map((lang) => (
                   <option key={lang.code} value={lang.code}>
